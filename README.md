@@ -34,7 +34,7 @@ The `tkinter_editor.py` includes a chatbot button. It's currently just a demo an
 ## Installation
 
 ```bash
-pip install pillow
+pip install pillow, tkinter
 python tkinter_editor.py
 ```
 

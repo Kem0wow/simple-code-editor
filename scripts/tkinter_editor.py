@@ -2,20 +2,16 @@ import tkinter as tk
 from tkinter import scrolledtext, filedialog, messagebox, Menu, Button
 import sys
 import io
+from PIL import ImageGrab
 
 size = 0
 
-import tkinter as tk
-from PIL import ImageGrab
-
 def take_screenshot():
-    # Tkinter pencere koordinatlarını al
     x = root.winfo_rootx()
     y = root.winfo_rooty()
     x1 = x + root.winfo_width()
     y1 = y + root.winfo_height()
 
-    # Ekran görüntüsü al
     img = ImageGrab.grab(bbox=(x, y, x1, y1))
     img.save("screenshot.png")
     print("Screenshot saved as screenshot.png")
