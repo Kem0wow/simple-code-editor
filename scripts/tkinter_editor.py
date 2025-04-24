@@ -1,8 +1,10 @@
 import tkinter as tk
-from tkinter import scrolledtext, filedialog, messagebox, Menu, Button
+from tkinter import scrolledtext, filedialog, messagebox, Menu, Button, simpledialog
 import sys
 import io
 from PIL import ImageGrab
+import keyword
+import re
 
 size = 0
 
@@ -11,40 +13,45 @@ def take_screenshot():
     y = root.winfo_rooty()
     x1 = x + root.winfo_width()
     y1 = y + root.winfo_height()
-
     img = ImageGrab.grab(bbox=(x, y, x1, y1))
     img.save("screenshot.png")
     print("Screenshot saved as screenshot.png")
 
 def on_keypress(event):
     text = code_editor.get("1.0", tk.END)
-    
     if event.char == '(':
         code_editor.insert(tk.INSERT, ')')
         code_editor.mark_set("insert", f"{code_editor.index(tk.INSERT)}-1c")
-
+    if event.char == '[':
+        code_editor.insert(tk.INSERT, ']')
+        code_editor.mark_set("insert", f"{code_editor.index(tk.INSERT)}-1c")
+    if event.char == '{':
+        code_editor.insert(tk.INSERT, '}')
+        code_editor.mark_set("insert", f"{code_editor.index(tk.INSERT)}-1c")
     elif event.char == '"':
         code_editor.insert(tk.INSERT, '"')
         code_editor.mark_set("insert", f"{code_editor.index(tk.INSERT)}-1c")
-    
     elif event.char == "'":
         code_editor.insert(tk.INSERT, "'")
         code_editor.mark_set("insert", f"{code_editor.index(tk.INSERT)}-1c")
 
+def custom_input(prompt=""):
+    return simpledialog.askstring("Input", prompt)
+
 def run_code():
     code = code_editor.get("1.0", tk.END)
-    
     old_stdout = sys.stdout
+    old_input = __builtins__.input
     redirected_output = sys.stdout = io.StringIO()
-
     try:
+        __builtins__.input = custom_input
         exec(code)
         output = redirected_output.getvalue()
     except Exception as e:
         output = str(e)
     finally:
         sys.stdout = old_stdout
-
+        __builtins__.input = old_input
     output_console.config(state="normal")
     output_console.delete("1.0", tk.END)
     output_console.insert(tk.END, output)
@@ -52,7 +59,6 @@ def run_code():
 
 def save_code():
     file_path = filedialog.asksaveasfilename(defaultextension=".py", filetypes=[("Python Files", "*.py"), ("All Files", "*.*")])
-    
     if file_path:
         code = code_editor.get("1.0", tk.END)
         with open(file_path, "w") as file:
@@ -60,12 +66,12 @@ def save_code():
 
 def open_code():
     file_path = filedialog.askopenfilename(filetypes=[("Python Files", "*.py"), ("All Files", "*.*")])
-    
     if file_path:
         with open(file_path, "r") as file:
             code = file.read()
             code_editor.delete("1.0", tk.END)
             code_editor.insert(tk.END, code)
+            highlight_keywords()
 
 def new_file():
     if messagebox.askyesno("New File", "Do you want to save the current file?"):
@@ -90,13 +96,54 @@ def unzoom():
         size -= 1
         code_editor.config(font=("Consolas", 12 + size))
 
+def highlight_keywords(event=None):
+    code = code_editor.get("1.0", tk.END)
+    code_editor.tag_remove("keyword", "1.0", tk.END)
+    code_editor.tag_remove("builtin", "1.0", tk.END)
+    code_editor.tag_remove("string", "1.0", tk.END)
+    code_editor.tag_remove("comment", "1.0", tk.END)
+
+    for kw in keyword.kwlist:
+        start = "1.0"
+        while True:
+            start = code_editor.search(rf'\b{kw}\b', start, stopindex=tk.END, regexp=True)
+            if not start:
+                break
+            end = f"{start}+{len(kw)}c"
+            code_editor.tag_add("keyword", start, end)
+            start = end
+
+    for const in ['True', 'False', 'None']:
+        start = "1.0"
+        while True:
+            start = code_editor.search(rf'\b{const}\b', start, stopindex=tk.END, regexp=True)
+            if not start:
+                break
+            end = f"{start}+{len(const)}c"
+            code_editor.tag_add("builtin", start, end)
+            start = end
+
+    matches = re.finditer(r'(\'[^\']*\'|"[^"]*")', code)
+    for match in matches:
+        start = f"1.0 + {match.start()}c"
+        end = f"1.0 + {match.end()}c"
+        code_editor.tag_add("string", start, end)
+
+    start = "1.0"
+    while True:
+        start = code_editor.search("#", start, stopindex=tk.END)
+        if not start:
+            break
+        end = code_editor.index(f"{start} lineend")
+        code_editor.tag_add("comment", start, end)
+        start = end
+
 root = tk.Tk()
 root.title("Python Code Editor")
 root.state("zoomed")
 root.minsize(800, 600)
 
 menu_bar = Menu(root)
-
 file_menu = Menu(menu_bar, tearoff=0)
 file_menu.add_command(label="New", command=new_file)
 file_menu.add_command(label="Open", command=open_code)
@@ -108,12 +155,17 @@ menu_bar.add_cascade(label="File", menu=file_menu)
 chat_menu = Menu(menu_bar, tearoff=0)
 chat_menu.add_command(label="Talk", command=chatbot_response)
 menu_bar.add_cascade(label="Chatbot", menu=chat_menu)
-
 root.config(menu=menu_bar)
 
 code_editor = scrolledtext.ScrolledText(root, height=20, font=("Consolas", 12+size))
 code_editor.pack(fill="both", expand=True, padx=10, pady=(10, 5))
 code_editor.bind("<Key>", on_keypress)
+code_editor.bind("<KeyRelease>", highlight_keywords)
+
+code_editor.tag_config("keyword", foreground="#ce42f5")
+code_editor.tag_config("builtin", foreground="#091bbd")
+code_editor.tag_config("string", foreground="#bf5d1b")
+code_editor.tag_config("comment", foreground="#228B22")
 
 button_frame = tk.Frame(root)
 button_frame.pack(pady=5)
