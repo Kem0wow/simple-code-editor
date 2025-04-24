@@ -5,6 +5,21 @@ import io
 
 size = 0
 
+import tkinter as tk
+from PIL import ImageGrab
+
+def take_screenshot():
+    # Tkinter pencere koordinatlarını al
+    x = root.winfo_rootx()
+    y = root.winfo_rooty()
+    x1 = x + root.winfo_width()
+    y1 = y + root.winfo_height()
+
+    # Ekran görüntüsü al
+    img = ImageGrab.grab(bbox=(x, y, x1, y1))
+    img.save("screenshot.png")
+    print("Screenshot saved as screenshot.png")
+
 def on_keypress(event):
     text = code_editor.get("1.0", tk.END)
     
@@ -115,6 +130,9 @@ zoom_button.pack()
 
 unzoom_button = tk.Button(button_frame, text="Unzoom", command=unzoom, bg="gray", fg="white", font=("Arial", 11, "bold"))
 unzoom_button.pack()
+
+screenshot_button = tk.Button(button_frame, text="Screenshot", command=take_screenshot, bg="#0275d8", fg="white")
+screenshot_button.pack()
 
 output_console = scrolledtext.ScrolledText(root, height=10, bg="black", fg="light green", font=("Consolas", 13), state="disabled")
 output_console.pack(fill="both", expand=True, padx=10, pady=(5, 10))
