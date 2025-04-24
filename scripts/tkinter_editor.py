@@ -18,21 +18,9 @@ def take_screenshot():
     print("Screenshot saved as screenshot.png")
 
 def on_keypress(event):
-    text = code_editor.get("1.0", tk.END)
-    if event.char == '(':
-        code_editor.insert(tk.INSERT, ')')
-        code_editor.mark_set("insert", f"{code_editor.index(tk.INSERT)}-1c")
-    if event.char == '[':
-        code_editor.insert(tk.INSERT, ']')
-        code_editor.mark_set("insert", f"{code_editor.index(tk.INSERT)}-1c")
-    if event.char == '{':
-        code_editor.insert(tk.INSERT, '}')
-        code_editor.mark_set("insert", f"{code_editor.index(tk.INSERT)}-1c")
-    elif event.char == '"':
-        code_editor.insert(tk.INSERT, '"')
-        code_editor.mark_set("insert", f"{code_editor.index(tk.INSERT)}-1c")
-    elif event.char == "'":
-        code_editor.insert(tk.INSERT, "'")
+    if event.char in "({[\"'":
+        match = { '(': ')', '[': ']', '{': '}', '"': '"', "'": "'" }
+        code_editor.insert(tk.INSERT, match[event.char])
         code_editor.mark_set("insert", f"{code_editor.index(tk.INSERT)}-1c")
 
 def custom_input(prompt=""):
@@ -82,8 +70,55 @@ def exit_app():
     if messagebox.askokcancel("Exit", "Are you sure you want to exit?"):
         root.destroy()
 
+def simple_bot(message):
+    responses = {
+        "hello": "Hi there! How can I help you?",
+        "hi": "Hey! Need some help?",
+        "how are you": "I'm just code, but thanks for asking!",
+        "bye": "Goodbye! Have a nice day.",
+        "code": "I'm here to help with your code!",
+        "help": "Sure, just tell me what you're stuck on.",
+        "no": "Yes!",
+        "kai": "Yep, that's my name",
+        "creator": "Kem0wow",
+        "your name": "KAI"
+    }
+    
+    message = message.lower()
+    for key in responses:
+        if key in message:
+            return responses[key]
+    return "I don't understand. Try asking something else."
+
 def chatbot_response():
-    messagebox.showinfo("Chatbot", "This is where chatbot will be added.")
+    chat_window = tk.Toplevel(root)
+    chat_window.title("Chatbot - KAI")
+    chat_window.geometry("400x500")
+
+    chat_display = tk.Text(chat_window, state="disabled", wrap="word", font=("Arial", 11))
+    chat_display.pack(expand=True, fill="both", padx=10, pady=10)
+
+    entry_field = tk.Entry(chat_window, font=("Arial", 11))
+    entry_field.pack(fill="x", padx=10, pady=(0,10))
+
+    def send_message(event=None):
+        user_msg = entry_field.get()
+        if user_msg.strip() == "":
+            return
+        entry_field.delete(0, tk.END)
+        bot_reply = simple_bot(user_msg)
+
+        chat_display.config(state="normal")
+        chat_display.insert(tk.END, f"You: {user_msg}\n", "user")
+        chat_display.insert(tk.END, f"KAI: {bot_reply}\n\n", "bot")
+        chat_display.config(state="disabled")
+        chat_display.see(tk.END)
+
+    entry_field.bind("<Return>", send_message)
+
+    # Tag renkleri
+    chat_display.tag_config("user", foreground="blue")
+    chat_display.tag_config("bot", foreground="green")
 
 def zoom():
     global size
@@ -170,17 +205,10 @@ code_editor.tag_config("comment", foreground="#228B22")
 button_frame = tk.Frame(root)
 button_frame.pack(pady=5)
 
-run_button = tk.Button(button_frame, text="Run", command=run_code, bg="#5cb85c", fg="white", font=("Arial", 11, "bold"))
-run_button.pack()
-
-zoom_button = tk.Button(button_frame, text="Zoom", command=zoom, bg="gray", fg="white", font=("Arial", 11, "bold"))
-zoom_button.pack()
-
-unzoom_button = tk.Button(button_frame, text="Unzoom", command=unzoom, bg="gray", fg="white", font=("Arial", 11, "bold"))
-unzoom_button.pack()
-
-screenshot_button = tk.Button(button_frame, text="Screenshot", command=take_screenshot, bg="#0275d8", fg="white")
-screenshot_button.pack()
+tk.Button(button_frame, text="Run", command=run_code, bg="#5cb85c", fg="white", font=("Arial", 11, "bold")).pack()
+tk.Button(button_frame, text="Zoom", command=zoom, bg="gray", fg="white", font=("Arial", 11, "bold")).pack()
+tk.Button(button_frame, text="Unzoom", command=unzoom, bg="gray", fg="white", font=("Arial", 11, "bold")).pack()
+tk.Button(button_frame, text="Screenshot", command=take_screenshot, bg="#0275d8", fg="white").pack()
 
 output_console = scrolledtext.ScrolledText(root, height=10, bg="black", fg="light green", font=("Consolas", 13), state="disabled")
 output_console.pack(fill="both", expand=True, padx=10, pady=(5, 10))
